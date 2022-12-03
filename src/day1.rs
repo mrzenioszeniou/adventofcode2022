@@ -45,7 +45,7 @@ impl Day1 {
 }
 
 impl Day for Day1 {
-    const NAME: &'static str = "Day 1: Calorie Counting";
+    const NAME: &'static str = "Day 1: Calorie Counting 🍟 🧮";
 
     fn solve() -> anyhow::Result<(String, String)> {
         let day = Self::init()?;
