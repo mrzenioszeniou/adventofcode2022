@@ -128,7 +128,7 @@ impl Day2 {
 }
 
 impl Day for Day2 {
-    const NAME: &'static str = "Day 2: Rock Paper Scissors 🪨 📜 ✂️";
+    const NAME: &'static str = "Day 2: Rock Paper Scissors ✊✋✌️";
 
     fn solve() -> anyhow::Result<(String, String)> {
         let day = Self::init()?;
