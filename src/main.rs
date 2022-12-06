@@ -3,6 +3,7 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 
 fn main() {
     let arg = std::env::args().nth(1).map(|arg| arg.to_lowercase());
@@ -13,12 +14,14 @@ fn main() {
         Some("3") => day3::Day3::solve_n_print(),
         Some("4") => day4::Day4::solve_n_print(),
         Some("5") => day5::Day5::solve_n_print(),
+        Some("6") => day6::Day6::solve_n_print(),
         Some("all") => {
             day1::Day1::solve_n_print();
             day2::Day2::solve_n_print();
             day3::Day3::solve_n_print();
             day4::Day4::solve_n_print();
             day5::Day5::solve_n_print();
+            day6::Day6::solve_n_print();
         }
         _ => {
             usage();
