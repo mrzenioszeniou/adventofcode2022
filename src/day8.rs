@@ -123,10 +123,15 @@ impl Day for Day8 {
     }
 }
 
-#[test]
-fn example() {
-    let day = Day8::load("res/day8_example.txt").unwrap();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    assert_eq!(day.part1(), 21);
-    assert_eq!(day.part2(), 8);
+    #[test]
+    fn example() {
+        let day = Day8::load("res/day8_example.txt").unwrap();
+
+        assert_eq!(day.part1(), 21);
+        assert_eq!(day.part2(), 8);
+    }
 }

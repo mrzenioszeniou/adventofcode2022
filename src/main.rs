@@ -6,6 +6,8 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
+mod day9;
+mod dir;
 
 fn main() {
     let arg = std::env::args().nth(1).map(|arg| arg.to_lowercase());
@@ -19,6 +21,7 @@ fn main() {
         Some("6") => day6::Day6::solve_n_print(),
         Some("7") => day7::Day7::solve_n_print(),
         Some("8") => day8::Day8::solve_n_print(),
+        Some("9") => day9::Day9::solve_n_print(),
         Some("all") => {
             day1::Day1::solve_n_print();
             day2::Day2::solve_n_print();
@@ -28,6 +31,7 @@ fn main() {
             day6::Day6::solve_n_print();
             day7::Day7::solve_n_print();
             day8::Day8::solve_n_print();
+            day9::Day9::solve_n_print();
         }
         _ => {
             usage();
