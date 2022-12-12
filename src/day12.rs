@@ -42,29 +42,31 @@ impl Day12 {
     }
 
     fn part1(&self) -> anyhow::Result<usize> {
-        self.find_shortest_path(self.start)
+        self.find_shortest_path(HashSet::from([self.start]))
             .context("Couldn't find path")
+            .map(|(_, cost)| cost)
     }
 
     fn part2(&self) -> anyhow::Result<usize> {
-        let mut best = None;
+        let mut starts = HashSet::new();
 
         for i in 0..self.map.len() {
             for j in 0..self.map[0].len() {
                 if self.map[i][j] == 'a' {
-                    if let Some(path) = self.find_shortest_path((i, j)) {
-                        if best.map_or(true, |b| b > path) {
-                            best = Some(path);
-                        }
-                    }
+                    starts.insert((i, j));
                 }
             }
         }
 
-        best.context("Couldn't find path")
+        self.find_shortest_path(starts)
+            .context("Couldn't find path")
+            .map(|(_, len)| len)
     }
 
-    fn find_shortest_path(&self, from: (usize, usize)) -> Option<usize> {
+    fn find_shortest_path(
+        &self,
+        from: HashSet<(usize, usize)>,
+    ) -> Option<(Vec<(usize, usize)>, usize)> {
         let heuristic =
             |curr: &(usize, usize)| self.end.0.abs_diff(curr.0) + self.end.1.abs_diff(curr.1);
 
@@ -91,7 +93,6 @@ impl Day12 {
             },
             heuristic,
         )
-        .map(|(_, steps)| steps)
     }
 }
 

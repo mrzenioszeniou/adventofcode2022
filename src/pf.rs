@@ -1,19 +1,23 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 
-pub fn a_star<S, N, H>(start: S, end: S, nexts: N, heur: H) -> Option<(Vec<S>, usize)>
+pub fn a_star<S, N, H>(starts: HashSet<S>, end: S, nexts: N, heur: H) -> Option<(Vec<S>, usize)>
 where
     S: Clone + std::hash::Hash + PartialEq + Eq + PartialOrd + Ord,
     N: Fn(&S) -> HashSet<(S, usize)>,
     H: Fn(&S) -> usize,
 {
     let mut prevs: HashMap<S, S> = HashMap::new();
-    let mut dists: HashMap<S, usize> = HashMap::from([(start.clone(), 0)]);
-    let mut to_visit: BTreeSet<(usize, S)> = BTreeSet::from([(0, start.clone())]);
+    let mut dists: HashMap<S, usize> = starts.iter().cloned().map(|start| (start, 0)).collect();
+    let mut to_visit: BTreeSet<(usize, S)> = starts
+        .iter()
+        .cloned()
+        .map(|start| (heur(&start), start))
+        .collect();
 
     while let Some((_, mut curr)) = to_visit.pop_first() {
         if curr == end {
             let mut path = vec![curr.clone()];
-            while curr != start {
+            while !starts.contains(&curr) {
                 curr = prevs.get(&curr).unwrap().clone();
                 path.push(curr.clone());
             }
