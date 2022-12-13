@@ -2,6 +2,7 @@ mod day1;
 mod day10;
 mod day11;
 mod day12;
+mod day13;
 mod day2;
 mod day3;
 mod day4;
@@ -29,6 +30,7 @@ fn main() {
         Some("10") => day10::Day10::solve_n_print(),
         Some("11") => day11::Day11::solve_n_print(),
         Some("12") => day12::Day12::solve_n_print(),
+        Some("13") => day13::Day13::solve_n_print(),
         Some("all") => {
             day1::Day1::solve_n_print();
             day2::Day2::solve_n_print();
@@ -42,6 +44,7 @@ fn main() {
             day10::Day10::solve_n_print();
             day11::Day11::solve_n_print();
             day12::Day12::solve_n_print();
+            day13::Day13::solve_n_print()
         }
         _ => {
             usage();
