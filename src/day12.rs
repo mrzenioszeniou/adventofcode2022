@@ -72,7 +72,7 @@ impl Day12 {
 
         crate::pf::a_star(
             from,
-            self.end,
+            |pos| pos == &self.end,
             |&(i, j)| {
                 let neighbours = crate::pf::neighbours_usize(
                     &(i, j),

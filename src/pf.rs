@@ -1,8 +1,9 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 
-pub fn a_star<S, N, H>(starts: HashSet<S>, end: S, nexts: N, heur: H) -> Option<(Vec<S>, usize)>
+pub fn a_star<S, E, N, H>(starts: HashSet<S>, end: E, nexts: N, heur: H) -> Option<(Vec<S>, usize)>
 where
     S: Clone + std::hash::Hash + PartialEq + Eq + PartialOrd + Ord,
+    E: Fn(&S) -> bool,
     N: Fn(&S) -> HashSet<(S, usize)>,
     H: Fn(&S) -> usize,
 {
@@ -15,14 +16,16 @@ where
         .collect();
 
     while let Some((_, mut curr)) = to_visit.pop_first() {
-        if curr == end {
+        if end(&curr) {
+            let dist = dists.get(&curr).unwrap();
+
             let mut path = vec![curr.clone()];
             while !starts.contains(&curr) {
                 curr = prevs.get(&curr).unwrap().clone();
                 path.push(curr.clone());
             }
             path.reverse();
-            return Some((path, *dists.get(&end).unwrap()));
+            return Some((path, *dist));
         }
 
         for (next, cost) in nexts(&curr) {
