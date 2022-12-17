@@ -34,7 +34,7 @@ impl Day16 {
         Ok(Self { valves })
     }
 
-    fn part1(&self) -> anyhow::Result<usize> {
+    fn part1(&self, elephant: bool) -> anyhow::Result<usize> {
         // println!("Idle Rate = {total_idle_rate}");
 
         let heur = |s: &State| {
@@ -53,7 +53,11 @@ impl Day16 {
                 }
 
                 estimation += closed_valves.iter().sum::<usize>();
+
                 closed_valves.pop_last();
+                if elephant {
+                    closed_valves.pop_last();
+                }
             }
 
             // println!("  heur = {estimation}");
@@ -70,13 +74,13 @@ impl Day16 {
                 .sum::<usize>();
             let timer = s.timer - 1;
 
-            let mut nexts = HashSet::new();
+            let mut nexts = vec![];
 
             if pressure_buildup == 0 {
                 return HashSet::from([(
                     State {
                         curr_valve: s.curr_valve.clone(),
-                        curr_valve_elephant: s.curr_valve_elephant.clone(),
+                        elephant_valve: s.elephant_valve.clone(),
                         closed_valves: s.closed_valves.clone(),
                         timer,
                     },
@@ -87,57 +91,115 @@ impl Day16 {
             if s.closed_valves.contains(&s.curr_valve)
                 && self.valves.get(&s.curr_valve).unwrap().rate > 0
             {
-                nexts.insert((
-                    State {
-                        curr_valve: s.curr_valve.clone(),
-                        curr_valve_elephant: s.curr_valve_elephant.clone(),
-                        closed_valves: {
-                            let mut valves = s.closed_valves.clone();
-                            valves.remove(&s.curr_valve);
-                            valves
-                        },
-                        timer,
+                nexts.push(State {
+                    curr_valve: s.curr_valve.clone(),
+                    elephant_valve: s.elephant_valve.clone(),
+                    closed_valves: {
+                        let mut valves = s.closed_valves.clone();
+                        valves.remove(&s.curr_valve);
+                        valves
                     },
-                    pressure_buildup,
-                ));
+                    timer,
+                });
             }
 
             for tunnel in self.valves.get(&s.curr_valve).unwrap().tunnels.iter() {
-                nexts.insert((
-                    State {
-                        curr_valve: tunnel.clone(),
-                        curr_valve_elephant: s.curr_valve_elephant.clone(),
+                nexts.push(State {
+                    curr_valve: tunnel.clone(),
+                    elephant_valve: s.elephant_valve.clone(),
+                    closed_valves: s.closed_valves.clone(),
+                    timer,
+                });
+            }
+
+            if elephant {
+                let mut elephant_nexts = vec![];
+
+                if s.closed_valves.contains(&s.elephant_valve)
+                    && self.valves.get(&s.elephant_valve).unwrap().rate > 0
+                {
+                    elephant_nexts.push(State {
+                        curr_valve: s.curr_valve.clone(),
+                        elephant_valve: s.elephant_valve.clone(),
+                        closed_valves: {
+                            let mut valves = s.closed_valves.clone();
+                            valves.remove(&s.elephant_valve);
+                            valves
+                        },
+                        timer,
+                    });
+                }
+
+                for tunnel in self.valves.get(&s.elephant_valve).unwrap().tunnels.iter() {
+                    elephant_nexts.push(State {
+                        curr_valve: s.curr_valve.clone(),
+                        elephant_valve: tunnel.clone(),
                         closed_valves: s.closed_valves.clone(),
                         timer,
-                    },
-                    pressure_buildup,
-                ));
+                    });
+                }
+
+                let mut combined_nexts = HashSet::new();
+
+                for our_next in nexts.iter() {
+                    for elephant_next in elephant_nexts.iter() {
+                        if s.curr_valve == our_next.curr_valve
+                            && s.elephant_valve == elephant_next.elephant_valve
+                            && s.curr_valve == s.elephant_valve
+                        {
+                            continue;
+                        }
+
+                        combined_nexts.insert((
+                            State {
+                                curr_valve: our_next.curr_valve.clone(),
+                                elephant_valve: elephant_next.elephant_valve.clone(),
+                                closed_valves: {
+                                    let mut valves = our_next.closed_valves.clone();
+                                    valves.retain(|v| elephant_next.closed_valves.contains(v));
+                                    valves
+                                },
+                                timer,
+                            },
+                            pressure_buildup,
+                        ));
+                    }
+                }
+
+                combined_nexts
+            } else {
+                nexts.into_iter().map(|s| (s, pressure_buildup)).collect()
             }
 
             // println!("{:?}", s);
             // for (next, pressure) in nexts.iter() {
             //     println!("  {next:?} +{pressure} pressure");
             // }
-
-            nexts
         };
 
         let (states, _) = pf::a_star(
             HashSet::from([State {
                 closed_valves: self.valves.keys().cloned().collect(),
                 curr_valve: "AA".to_string(),
-                curr_valve_elephant: "AA".to_string(),
-                timer: 30,
+                elephant_valve: "AA".to_string(),
+                timer: if elephant { 26 } else { 30 },
             }]),
             |s| s.timer == 0,
             nexts,
             heur,
         )
-        .context("no solution found")?;
+        .context(format!(
+            "no solution found {} elephant",
+            if elephant { "with" } else { "without" }
+        ))?;
 
         let mut total_released_pressure = 0;
 
-        for (_i, state) in states.into_iter().enumerate().take(30) {
+        for (_i, state) in states
+            .into_iter()
+            .enumerate()
+            .take(if elephant { 26 } else { 30 })
+        {
             let released_pressure = self
                 .valves
                 .iter()
@@ -162,7 +224,7 @@ impl Day for Day16 {
 
         // println!("{day:#?}");
 
-        Ok((day.part1()?.to_string(), "bar".to_string()))
+        Ok((day.part1(false)?.to_string(), day.part1(true)?.to_string()))
     }
 }
 
@@ -175,7 +237,7 @@ struct Valve {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 struct State {
     curr_valve: String,
-    curr_valve_elephant: String,
+    elephant_valve: String,
     closed_valves: BTreeSet<String>,
     timer: usize,
 }
