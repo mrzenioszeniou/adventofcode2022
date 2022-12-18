@@ -53,7 +53,7 @@ fn main() {
             day13::Day13::solve_n_print();
             day14::Day14::solve_n_print();
             day15::Day15::solve_n_print();
-            day16::Day16::solve_n_print()
+            day16::Day16::solve_n_print();
         }
         _ => {
             usage();

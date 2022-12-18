@@ -34,9 +34,7 @@ impl Day16 {
         Ok(Self { valves })
     }
 
-    fn part1(&self, elephant: bool) -> anyhow::Result<usize> {
-        // println!("Idle Rate = {total_idle_rate}");
-
+    fn solve(&self, elephant: bool) -> anyhow::Result<usize> {
         let heur = |s: &State| {
             let mut estimation = 0;
             let mut closed_valves: BTreeSet<usize> = s
@@ -143,10 +141,7 @@ impl Day16 {
 
                 for our_next in nexts.iter() {
                     for elephant_next in elephant_nexts.iter() {
-                        if s.curr_valve == our_next.curr_valve
-                            && s.elephant_valve == elephant_next.elephant_valve
-                            && s.curr_valve == s.elephant_valve
-                        {
+                        if our_next == elephant_next {
                             continue;
                         }
 
@@ -207,7 +202,11 @@ impl Day16 {
                 .map(|(_, v)| v.rate)
                 .sum::<usize>();
 
-            // println!("[{_i}] {released_pressure} pressure released with {state:?}");
+            // println!(
+            //     "[{_i}] {released_pressure} pressure released curr={},closed={}",
+            //     state.curr_valve,
+            //     state.closed_valves.len()
+            // );
 
             total_released_pressure += released_pressure;
         }
@@ -224,7 +223,7 @@ impl Day for Day16 {
 
         // println!("{day:#?}");
 
-        Ok((day.part1(false)?.to_string(), day.part1(true)?.to_string()))
+        Ok((day.solve(false)?.to_string(), day.solve(true)?.to_string()))
     }
 }
 
@@ -240,4 +239,24 @@ struct State {
     elephant_valve: String,
     closed_valves: BTreeSet<String>,
     timer: usize,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Day16;
+
+    #[test]
+    fn part1() {
+        let day = Day16::load("res/day16.txt").unwrap();
+
+        assert_eq!(day.solve(false).unwrap(), 1754);
+    }
+
+    #[test]
+    fn examples() {
+        let day = Day16::load("res/day16_example.txt").unwrap();
+
+        assert_eq!(day.solve(false).unwrap(), 1651);
+        assert_eq!(day.solve(true).unwrap(), 1707);
+    }
 }
