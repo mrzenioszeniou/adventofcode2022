@@ -75,3 +75,14 @@ pub fn neighbours_usize(
 
     ret
 }
+
+pub fn neighhbours_usize_3d(&(i, j, k): &(isize, isize, isize)) -> Vec<(isize, isize, isize)> {
+    vec![
+        (i + 1, j, k),
+        (i - 1, j, k),
+        (i, j + 1, k),
+        (i, j - 1, k),
+        (i, j, k + 1),
+        (i, j, k - 1),
+    ]
+}
