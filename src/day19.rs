@@ -14,7 +14,7 @@ impl Day for Day19 {
     fn solve() -> anyhow::Result<(String, String)> {
         let day = Self::load("res/day19.txt")?;
 
-        Ok((day.part1().to_string(), "bar".to_string()))
+        Ok((day.part1().to_string(), day.part2().to_string()))
     }
 }
 
@@ -33,6 +33,22 @@ impl Day19 {
         }
 
         sum
+    }
+
+    fn part2(&self) -> u32 {
+        let mut max = 0;
+
+        for (idx, blueprint) in self.blueprints.iter().take(3).enumerate() {
+            let mut cache = HashMap::new();
+
+            let geodes = Self::naive(State::new(32), blueprint, &mut cache);
+
+            println!("[{}] {blueprint:?}: {geodes} geodes", idx + 1);
+
+            max = std::cmp::max(max, geodes);
+        }
+
+        max
     }
 
     fn load(path: &str) -> anyhow::Result<Self> {
@@ -98,34 +114,41 @@ impl Day19 {
 
         let mut max = 0;
 
-        let mut hoard = false;
+        // We have 5 eventualities
+        // we'll wait until we can construct an ore bot
+        // we'll wait until we can construct a clay bot
+        // we'll wait until we can construct an obsidian bot
+        // we'll wait until we can construct a geode bot
+        // none of the above are possible because we'd run out the timer, so we just produce until
+        // the timer's up
 
-        // Try with increased production
+        let mut hoard = true;
+
+        // Try with increasing production
         for resource in Resource::iter() {
-            if let Some(without_extra_bot) = state.construct(resource, blueprints) {
-                // Run production without the new bot
-                let mut post_production = without_extra_bot.produce();
-                // Add the new bot to the production
-                *post_production.production.entry(resource).or_default() += 1;
-
+            if let Some(with_new_bot) = state.construct(resource, blueprints) {
                 // Try substate
-                max = std::cmp::max(max, Self::naive(post_production, blueprints, cache));
-            } else if blueprints.get(&resource).unwrap().keys().all(|req| {
-                state
-                    .production
-                    .get(req)
-                    .map(|a| *a > 0)
-                    .unwrap_or_default()
-            }) {
-                hoard = true;
+                max = std::cmp::max(max, Self::naive(with_new_bot, blueprints, cache));
+
+                // We have managed to produce something, so no need to run out the clock
+                hoard = false;
             }
         }
 
-        // Try being stingy if there was something we couldn't construct
+        // If there's nothing we can construct with the remaining time, run out the clock
         if hoard {
-            max = std::cmp::max(max, Self::naive(state.produce(), blueprints, cache));
+            max = std::cmp::max(
+                max,
+                state
+                    .produce(state.timeout)
+                    .stockpiled
+                    .get(&Resource::Geode)
+                    .cloned()
+                    .unwrap_or_default(),
+            );
         }
 
+        // Cache results
         if let Some(cached) = cache.get_mut(&state) {
             if *cached < max {
                 *cached = max;
@@ -143,11 +166,11 @@ impl Day19 {
 struct State {
     production: BTreeMap<Resource, u32>,
     stockpiled: BTreeMap<Resource, u32>,
-    timeout: usize,
+    timeout: u32,
 }
 
 impl State {
-    fn new(timeout: usize) -> Self {
+    fn new(timeout: u32) -> Self {
         Self {
             production: BTreeMap::from([(Resource::Ore, 1)]),
             stockpiled: Default::default(),
@@ -162,27 +185,49 @@ impl State {
     ) -> Option<Self> {
         let blueprint = blueprints.get(&resource)?;
 
-        let mut next_stockpile = self.stockpiled.clone();
+        let mut required_minutes = 0;
 
         for (req_resource, req_amount) in blueprint.iter() {
-            next_stockpile.insert(
-                *req_resource,
+            let missing = req_amount.saturating_sub(
                 self.stockpiled
                     .get(req_resource)
                     .cloned()
-                    .unwrap_or_default()
-                    .checked_sub(*req_amount)?,
+                    .unwrap_or_default(),
             );
+
+            if missing == 0 {
+                continue;
+            }
+
+            let production = self
+                .production
+                .get(req_resource)
+                .cloned()
+                .unwrap_or_default();
+
+            if production > 0 {
+                required_minutes = std::cmp::max(required_minutes, missing.div_ceil(production));
+            } else {
+                return None;
+            }
         }
 
-        Some(Self {
-            stockpiled: next_stockpile,
-            production: self.production.clone(),
-            timeout: self.timeout,
-        })
+        if required_minutes >= self.timeout {
+            None
+        } else {
+            let mut ret = self.produce(required_minutes + 1);
+
+            blueprint.iter().for_each(|(req_res, req_cnt)| {
+                *ret.stockpiled.get_mut(req_res).unwrap() -= *req_cnt
+            });
+
+            *ret.production.entry(resource).or_default() += 1;
+
+            Some(ret)
+        }
     }
 
-    fn produce(&self) -> Self {
+    fn produce(&self, secs: u32) -> Self {
         Self {
             production: self.production.clone(),
             stockpiled: self
@@ -191,11 +236,11 @@ impl State {
                 .map(|(res, amount)| {
                     (
                         *res,
-                        *amount + self.stockpiled.get(res).cloned().unwrap_or_default(),
+                        *amount * secs + self.stockpiled.get(res).cloned().unwrap_or_default(),
                     )
                 })
                 .collect(),
-            timeout: self.timeout - 1,
+            timeout: self.timeout - secs,
         }
     }
 }

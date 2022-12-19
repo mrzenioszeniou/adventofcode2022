@@ -1,3 +1,5 @@
+#![feature(int_roundings)]
+
 mod day1;
 mod day10;
 mod day11;
